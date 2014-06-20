@@ -75,25 +75,25 @@ void jni_EventHardwareAccelerationError()
     (*myVm)->DetachCurrentThread(myVm);
 }
 
-void jni_SetAndroidSurfaceSizeEnv(JNIEnv *p_env, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
+void jni_SetAndroidSurfaceSizeEnv(JNIEnv *p_env, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den, int orientation)
 {
     if (vout_android_gui == NULL)
         return;
 
     jclass cls = (*p_env)->GetObjectClass (p_env, vout_android_gui);
-    jmethodID methodId = (*p_env)->GetMethodID (p_env, cls, "setSurfaceSize", "(IIIIII)V");
+    jmethodID methodId = (*p_env)->GetMethodID (p_env, cls, "setSurfaceSize", "(IIIIIII)V");
 
-    (*p_env)->CallVoidMethod (p_env, vout_android_gui, methodId, width, height, visible_width, visible_height, sar_num, sar_den);
+    (*p_env)->CallVoidMethod (p_env, vout_android_gui, methodId, width, height, visible_width, visible_height, sar_num, sar_den, orientation);
 
     (*p_env)->DeleteLocalRef(p_env, cls);
 }
 
-void jni_SetAndroidSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
+void jni_SetAndroidSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den, int orientation)
 {
     JNIEnv *p_env;
 
     (*myVm)->AttachCurrentThread (myVm, &p_env, NULL);
-    jni_SetAndroidSurfaceSizeEnv(p_env, width, height, visible_width, visible_height, sar_num, sar_den);
+    jni_SetAndroidSurfaceSizeEnv(p_env, width, height, visible_width, visible_height, sar_num, sar_den, orientation);
 
     (*myVm)->DetachCurrentThread (myVm);
 }

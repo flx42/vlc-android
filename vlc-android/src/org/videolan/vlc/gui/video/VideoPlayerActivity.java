@@ -204,6 +204,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
     private int mVideoVisibleWidth;
     private int mSarNum;
     private int mSarDen;
+    private int mOrientation;
+    private static final int ORIENT_NORMAL = 0;
+    private static final int ORIENT_ROTATED_90 = 6;
+    private static final int ORIENT_ROTATED_180 = 3;
+    private static final int ORIENT_ROTATED_270 = 5;
 
     //Volume
     private AudioManager mAudioManager;
@@ -277,7 +282,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
                         public void onSystemUiVisibilityChange(int visibility) {
                             if (visibility == mUiVisibility)
                                 return;
-                            setSurfaceSize(mVideoWidth, mVideoHeight, mVideoVisibleWidth, mVideoVisibleHeight, mSarNum, mSarDen);
+                            setSurfaceSize(mVideoWidth, mVideoHeight, mVideoVisibleWidth, mVideoVisibleHeight, mSarNum, mSarDen, mOrientation);
                             if (visibility == View.SYSTEM_UI_FLAG_VISIBLE && !mShowing && !isFinishing()) {
                                 showOverlay();
                             }
@@ -697,12 +702,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
-        setSurfaceSize(mVideoWidth, mVideoHeight, mVideoVisibleWidth, mVideoVisibleHeight, mSarNum, mSarDen);
+        setSurfaceSize(mVideoWidth, mVideoHeight, mVideoVisibleWidth, mVideoVisibleHeight, mSarNum, mSarDen, mOrientation);
         super.onConfigurationChanged(newConfig);
     }
 
     @Override
-    public void setSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den) {
+    public void setSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den, int orientation) {
         if (width * height == 0)
             return;
 
@@ -713,6 +718,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         mVideoVisibleWidth  = visible_width;
         mSarNum = sar_num;
         mSarDen = sar_den;
+        mOrientation = orientation;
         Message msg = mHandler.obtainMessage(SURFACE_SIZE);
         mHandler.sendMessage(msg);
     }

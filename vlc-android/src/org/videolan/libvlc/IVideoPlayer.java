@@ -30,5 +30,5 @@ public interface IVideoPlayer {
      * @param sar_num Surface aspect ratio numerator
      * @param sar_den Surface aspect ratio denominator
      */
-    void setSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den);
+    void setSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den, int orientation);
 }
