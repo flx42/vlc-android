@@ -73,6 +73,7 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
+import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.media.MediaRouter;
@@ -93,6 +94,8 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.TextureView;
+import android.view.TextureView.SurfaceTextureListener;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnSystemUiVisibilityChangeListener;
@@ -118,8 +121,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
     // external intent.
     private final static String PLAY_FROM_VIDEOGRID = "org.videolan.vlc.gui.video.PLAY_FROM_VIDEOGRID";
 
-    private SurfaceView mSurface;
-    private SurfaceView mSubtitlesSurface;
+    private View mSurface;
+    private View mSubtitlesSurface;
     private SurfaceHolder mSurfaceHolder;
     private SurfaceHolder mSubtitlesSurfaceHolder;
     private FrameLayout mSurfaceFrame;
@@ -330,29 +333,59 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
         mSurfaceFrame = (FrameLayout) findViewById(R.id.player_surface_frame);
 
-        mSurface = new SurfaceView(mSurfaceFrame.getContext());
+        boolean useSurfaceView = !LibVlcUtil.isICSOrLater();
+
+        if (useSurfaceView) {
+            SurfaceView surface = new SurfaceView(mSurfaceFrame.getContext());
+
+            mSurfaceHolder = surface.getHolder();
+            String chroma = mSettings.getString("chroma_format", "");
+            if(LibVlcUtil.isGingerbreadOrLater() && chroma.equals("YV12")) {
+                mSurfaceHolder.setFormat(ImageFormat.YV12);
+            } else if (chroma.equals("RV16")) {
+                mSurfaceHolder.setFormat(PixelFormat.RGB_565);
+            } else {
+                mSurfaceHolder.setFormat(PixelFormat.RGBX_8888);
+            }
+            mSurfaceHolder.addCallback(mSurfaceCallback);
+
+            mSurface = surface;
+        }
+        else {
+            TextureView surface = new TextureView(mSurfaceFrame.getContext());
+
+            surface.setSurfaceTextureListener(mSurfaceTextureListener);
+            /* Force acceptable scaling */
+            surface.setScaleX(1.0001f);
+
+            mSurface = surface;
+        }
         mSurface.setLayoutParams(new LayoutParams(1, 1));
         mSurfaceFrame.addView(mSurface);
-                                                                               
-        mSurfaceHolder = mSurface.getHolder();
-        String chroma = mSettings.getString("chroma_format", "");
-        if(LibVlcUtil.isGingerbreadOrLater() && chroma.equals("YV12")) {
-            mSurfaceHolder.setFormat(ImageFormat.YV12);
-        } else if (chroma.equals("RV16")) {
-            mSurfaceHolder.setFormat(PixelFormat.RGB_565);
-        } else {
-            mSurfaceHolder.setFormat(PixelFormat.RGBX_8888);
+
+        if (useSurfaceView) {
+            SurfaceView surface = new SurfaceView(mSurfaceFrame.getContext());
+            surface.setZOrderMediaOverlay(true);
+
+            mSubtitlesSurfaceHolder = surface.getHolder();
+            mSubtitlesSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+            mSubtitlesSurfaceHolder.addCallback(mSubtitlesSurfaceCallback);
+
+            mSubtitlesSurface = surface;
         }
-        mSurfaceHolder.addCallback(mSurfaceCallback);
-        
-        mSubtitlesSurface = new SurfaceView(mSurfaceFrame.getContext());
+        else {
+            TextureView surface = new TextureView(mSurfaceFrame.getContext());
+
+            surface.setSurfaceTextureListener(mSubtitlesSurfaceTextureListener);
+            surface.setOpaque(false);
+            surface.setScaleX(1.0001f);
+
+            mSubtitlesSurface = surface;
+        }
         mSubtitlesSurface.setLayoutParams(new LayoutParams(1, 1));
         mSubtitlesSurface.setVisibility(View.INVISIBLE);
-        mSubtitlesSurface.setZOrderMediaOverlay(true);
         mSurfaceFrame.addView(mSubtitlesSurface);
-        mSubtitlesSurfaceHolder = mSubtitlesSurface.getHolder();
-        mSubtitlesSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
-        mSubtitlesSurfaceHolder.addCallback(mSubtitlesSurfaceCallback);
+
 
         mSeekbar = (SeekBar) findViewById(R.id.player_overlay_seekbar);
         mSeekbar.setOnSeekBarChangeListener(mSeekListener);
@@ -683,11 +716,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         Message msg = mHandler.obtainMessage(SURFACE_SIZE);
         mHandler.sendMessage(msg);
     }
-    
+
     public void showSubtitlesSurface() {
         mHandler.sendEmptyMessage(SHOW_SUBTITLES_SURFACE);
     }
-    
+
     public void hideSubtitlesSurface() {
         mHandler.sendEmptyMessage(HIDE_SUBTITLES_SURFACE);
     }
@@ -1104,23 +1137,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
                 break;
         }
 
-        SurfaceView surface;
-        SurfaceView subtitlesSurface;
-        SurfaceHolder surfaceHolder;
-        SurfaceHolder subtitlesSurfaceHolder;
+        View surface;
+        View subtitlesSurface;
         FrameLayout surfaceFrame;
 
         if (mPresentation == null) {
             surface = mSurface;
             subtitlesSurface = mSubtitlesSurface;
-            surfaceHolder = mSurfaceHolder;
-            subtitlesSurfaceHolder = mSubtitlesSurfaceHolder;
             surfaceFrame = mSurfaceFrame;
         } else {
             surface = mPresentation.mSurface;
             subtitlesSurface = mPresentation.mSubtitlesSurface;
-            surfaceHolder = mPresentation.mSurfaceHolder;
-            subtitlesSurfaceHolder = mPresentation.mSubtitlesSurfaceHolder;
             surfaceFrame = mPresentation.mSurfaceFrame;
         }
 
@@ -1598,6 +1625,44 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
             if(mLibVLC != null)
                 mLibVLC.detachSubtitlesSurface();
         }
+    };
+
+    private final TextureView.SurfaceTextureListener mSurfaceTextureListener = new SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture st, int width, int height) {
+            if (mLibVLC != null)
+                mLibVLC.attachSurface(new Surface(st), VideoPlayerActivity.this);
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture st, int width, int height) {}
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture st) {}
+    };
+
+    private final TextureView.SurfaceTextureListener mSubtitlesSurfaceTextureListener = new SurfaceTextureListener() {
+        @Override
+        public void onSurfaceTextureAvailable(SurfaceTexture st, int width, int height) {
+            if (mLibVLC != null)
+                mLibVLC.attachSubtitlesSurface(new Surface(st));
+        }
+
+        @Override
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture st) {
+            return true;
+        }
+
+        @Override
+        public void onSurfaceTextureSizeChanged(SurfaceTexture st, int width, int height) {}
+
+        @Override
+        public void onSurfaceTextureUpdated(SurfaceTexture st) {}
     };
 
     /**
