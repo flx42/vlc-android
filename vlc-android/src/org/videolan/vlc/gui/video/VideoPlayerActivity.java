@@ -326,9 +326,13 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
         mMenu = (ImageButton) findViewById(R.id.player_overlay_adv_function);
 
-        mSurface = (SurfaceView) findViewById(R.id.player_surface);
-        mSurfaceHolder = mSurface.getHolder();
         mSurfaceFrame = (FrameLayout) findViewById(R.id.player_surface_frame);
+
+        mSurface = new SurfaceView(mSurfaceFrame.getContext());
+        mSurface.setLayoutParams(new LayoutParams(1, 1));
+        mSurfaceFrame.addView(mSurface);
+                                                                               
+        mSurfaceHolder = mSurface.getHolder();
         String chroma = mSettings.getString("chroma_format", "");
         if(LibVlcUtil.isGingerbreadOrLater() && chroma.equals("YV12")) {
             mSurfaceHolder.setFormat(ImageFormat.YV12);
@@ -338,11 +342,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
             mSurfaceHolder.setFormat(PixelFormat.RGBX_8888);
         }
         mSurfaceHolder.addCallback(mSurfaceCallback);
-
-        mSubtitlesSurface = (SurfaceView) findViewById(R.id.subtitles_surface);
+        
+        mSubtitlesSurface = new SurfaceView(mSurfaceFrame.getContext());
+        mSubtitlesSurface.setLayoutParams(new LayoutParams(1, 1));
+        mSubtitlesSurface.setVisibility(View.INVISIBLE);
+        mSubtitlesSurface.setZOrderMediaOverlay(true);
+        mSurfaceFrame.addView(mSubtitlesSurface);
         mSubtitlesSurfaceHolder = mSubtitlesSurface.getHolder();
         mSubtitlesSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
-        mSubtitlesSurface.setZOrderMediaOverlay(true);
         mSubtitlesSurfaceHolder.addCallback(mSubtitlesSurfaceCallback);
 
         mSeekbar = (SeekBar) findViewById(R.id.player_overlay_seekbar);
