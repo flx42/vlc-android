@@ -153,6 +153,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
     private static final int AUDIO_SERVICE_CONNECTION_SUCCESS = 5;
     private static final int AUDIO_SERVICE_CONNECTION_FAILED = 6;
     private static final int FADE_OUT_INFO = 4;
+    private static final int SHOW_SUBTITLES_SURFACE = 7;
+    private static final int HIDE_SUBTITLES_SURFACE = 8;
     private boolean mDragging;
     private boolean mShowing;
     private int mUiVisibility = -1;
@@ -393,9 +395,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         }
         Log.d(TAG,"Hardware Acceleration mode : " + Integer.toString(mLibVLC.getHardwareAcceleration() ));
 
-        /* Only show the subtitles surface when using "Full Acceleration" mode */
-        if (mLibVLC.getHardwareAcceleration() == LibVLC.HW_ACCELERATION_FULL)
-            mSubtitlesSurface.setVisibility(View.VISIBLE);
         // Signal to LibVLC that the videoPlayerActivity was created, thus the
         // SurfaceView is now available for MediaCodec direct rendering.
         mLibVLC.eventVideoPlayerActivityCreated(true);
@@ -684,6 +683,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         Message msg = mHandler.obtainMessage(SURFACE_SIZE);
         mHandler.sendMessage(msg);
     }
+    
+    public void showSubtitlesSurface() {
+        mHandler.sendEmptyMessage(SHOW_SUBTITLES_SURFACE);
+    }
+    
+    public void hideSubtitlesSurface() {
+        mHandler.sendEmptyMessage(HIDE_SUBTITLES_SURFACE);
+    }
 
     /**
      * Lock screen rotation
@@ -916,6 +923,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
                     break;
                 case AUDIO_SERVICE_CONNECTION_FAILED:
                     activity.finish();
+                    break;
+                case SHOW_SUBTITLES_SURFACE:
+                    activity.mSubtitlesSurface.setVisibility(View.VISIBLE);
+                    break;
+                case HIDE_SUBTITLES_SURFACE:
+                    activity.mSubtitlesSurface.setVisibility(View.INVISIBLE);
                     break;
             }
         }
@@ -2163,9 +2176,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
             mSubtitlesSurface.setZOrderMediaOverlay(true);
             mSubtitlesSurfaceHolder.addCallback(activity.mSubtitlesSurfaceCallback);
 
-            /* Only show the subtitles surface when using "Full Acceleration" mode */
-            if (mLibVLC != null && mLibVLC.getHardwareAcceleration() == LibVLC.HW_ACCELERATION_FULL)
-                mSubtitlesSurface.setVisibility(View.VISIBLE);
             Log.i(TAG, "Secondary display created");
         }
     }

@@ -188,3 +188,20 @@ void jni_getMouseCoordinates(int *action, int *button, int *x, int *y)
 
     mouse_button = mouse_action = mouse_x = mouse_y = -1;
 }
+
+void jni_SetSubtitlesSurfaceVisibility(bool visible)
+{
+    if (vout_android_gui == NULL)
+        return;
+
+    JNIEnv *env;
+    (*myVm)->AttachCurrentThread(myVm, &env, NULL);
+
+    jclass cls = (*env)->GetObjectClass(env, vout_android_gui);
+    const char *name = visible ? "showSubtitlesSurface" : "hideSubtitlesSurface";
+    jmethodID methodId = (*env)->GetMethodID(env, cls, name, "()V");
+    (*env)->CallVoidMethod(env, vout_android_gui, methodId);
+
+    (*env)->DeleteLocalRef(env, cls);
+    (*myVm)->DetachCurrentThread(myVm);
+}
