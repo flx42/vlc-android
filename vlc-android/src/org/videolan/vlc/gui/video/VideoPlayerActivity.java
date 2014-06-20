@@ -1082,7 +1082,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
             isPortrait = false;
         }
 
-        if (sw > sh && isPortrait || sw < sh && !isPortrait) {
+        boolean can_rotate = mSurface instanceof TextureView;
+        if ((can_rotate && mOrientation == ORIENT_ROTATED_90 || mOrientation == ORIENT_ROTATED_270)
+                || sw > sh && isPortrait || sw < sh && !isPortrait) {
             dw = sh;
             dh = sw;
         }
@@ -1159,8 +1161,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
         // set display size
         LayoutParams lp = surface.getLayoutParams();
-        lp.width  = (int) Math.ceil(dw * mVideoWidth / mVideoVisibleWidth);
-        lp.height = (int) Math.ceil(dh * mVideoHeight / mVideoVisibleHeight);
+        if (can_rotate && (mOrientation == ORIENT_ROTATED_90 || mOrientation == ORIENT_ROTATED_270)) {
+            lp.width  = (int) Math.ceil(dw * mVideoHeight / mVideoVisibleHeight);
+            lp.height = (int) Math.ceil(dh * mVideoWidth / mVideoVisibleWidth);
+        }
+        else {
+            lp.width  = (int) Math.ceil(dw * mVideoWidth / mVideoVisibleWidth);
+            lp.height = (int) Math.ceil(dh * mVideoHeight / mVideoVisibleHeight);
+        }
         surface.setLayoutParams(lp);
         subtitlesSurface.setLayoutParams(lp);
 
@@ -1169,6 +1177,22 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         lp.width = (int) Math.floor(dw);
         lp.height = (int) Math.floor(dh);
         surfaceFrame.setLayoutParams(lp);
+
+        if (can_rotate) {
+            switch (mOrientation) {
+            case ORIENT_ROTATED_90:
+                surfaceFrame.setRotation(90);
+                break;
+            case ORIENT_ROTATED_270:
+                surfaceFrame.setRotation(270);
+                break;
+            case ORIENT_ROTATED_180:
+                surfaceFrame.setRotation(180);
+                break;
+            default:
+                break;
+            }
+        }
 
         surface.invalidate();
         subtitlesSurface.invalidate();
