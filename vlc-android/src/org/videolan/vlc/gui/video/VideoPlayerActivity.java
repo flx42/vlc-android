@@ -1111,10 +1111,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
             surfaceFrame = mPresentation.mSurfaceFrame;
         }
 
-        // force surface buffer size
-        surfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
-        subtitlesSurfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
-
         // set display size
         LayoutParams lp = surface.getLayoutParams();
         lp.width  = (int) Math.ceil(dw * mVideoWidth / mVideoVisibleWidth);
